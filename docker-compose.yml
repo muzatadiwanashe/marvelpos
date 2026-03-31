@@ -1,4 +1,4 @@
-﻿version: "3.9"
+version: "3.9"
 
 services:
   mariadb:
@@ -33,7 +33,7 @@ services:
       retries: 5
 
   frappe:
-    image: frappe/frappe-worker:v15.latest
+    image: frappe/frappe-worker:v15.1.0
     container_name: marvelpos-frappe
     depends_on:
       mariadb:
@@ -58,7 +58,7 @@ services:
     command: tail -f /dev/null
 
   web:
-    image: frappe/frappe-nginx:v15.latest
+    image: frappe/frappe-nginx:v15.1.0
     container_name: marvelpos-web
     depends_on:
       - frappe
@@ -76,7 +76,7 @@ services:
     restart: unless-stopped
 
   socketio:
-    image: frappe/frappe-worker:v15.latest
+    image: frappe/frappe-worker:v15.1.0
     container_name: marvelpos-socketio
     depends_on:
       - frappe
@@ -98,7 +98,7 @@ services:
     restart: unless-stopped
 
   worker-default:
-    image: frappe/frappe-worker:v15.latest
+    image: frappe/frappe-worker:v15.1.0
     container_name: marvelpos-worker-default
     depends_on:
       - frappe
@@ -120,7 +120,7 @@ services:
     restart: unless-stopped
 
   worker-long:
-    image: frappe/frappe-worker:v15.latest
+    image: frappe/frappe-worker:v15.1.0
     container_name: marvelpos-worker-long
     depends_on:
       - frappe
@@ -142,7 +142,7 @@ services:
     restart: unless-stopped
 
   scheduler:
-    image: frappe/frappe-worker:v15.latest
+    image: frappe/frappe-worker:v15.1.0
     container_name: marvelpos-scheduler
     depends_on:
       - frappe
