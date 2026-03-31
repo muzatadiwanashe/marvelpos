@@ -1,0 +1,172 @@
+﻿version: "3.9"
+
+services:
+  mariadb:
+    image: mariadb:10.6
+    container_name: marvelpos-mariadb
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: marvelpos
+      MYSQL_USER: marvelpos
+      MYSQL_PASSWORD: marvelpos123
+    volumes:
+      - db_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    networks:
+      - marvelpos-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: marvelpos-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - marvelpos-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      timeout: 10s
+      retries: 5
+
+  frappe:
+    image: frappe/frappe-worker:v15.latest
+    container_name: marvelpos-frappe
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DB_HOST: mariadb
+      DB_PORT: 3306
+      DB_NAME: marvelpos
+      DB_USER: marvelpos
+      DB_PASSWORD: marvelpos123
+      REDIS_CACHE: redis://redis:6379/1
+      REDIS_QUEUE: redis://redis:6379/2
+      REDIS_SOCKETIO: redis://redis:6379/3
+    volumes:
+      - frappe_sites:/home/frappe/frappe-bench/sites
+    networks:
+      - marvelpos-network
+    stdin_open: true
+    tty: true
+    command: tail -f /dev/null
+
+  web:
+    image: frappe/frappe-nginx:v15.latest
+    container_name: marvelpos-web
+    depends_on:
+      - frappe
+      - socketio
+    environment:
+      FRAPPE_APP_PORT: 8000
+      SOCKETIO_PORT: 9000
+    volumes:
+      - frappe_sites:/home/frappe/frappe-bench/sites
+    ports:
+      - "80:80"
+      - "443:443"
+    networks:
+      - marvelpos-network
+    restart: unless-stopped
+
+  socketio:
+    image: frappe/frappe-worker:v15.latest
+    container_name: marvelpos-socketio
+    depends_on:
+      - frappe
+      - redis
+    environment:
+      DB_HOST: mariadb
+      DB_PORT: 3306
+      DB_NAME: marvelpos
+      DB_USER: marvelpos
+      DB_PASSWORD: marvelpos123
+      REDIS_CACHE: redis://redis:6379/1
+      REDIS_QUEUE: redis://redis:6379/2
+      REDIS_SOCKETIO: redis://redis:6379/3
+    volumes:
+      - frappe_sites:/home/frappe/frappe-bench/sites
+    networks:
+      - marvelpos-network
+    command: node /home/frappe/frappe-bench/apps/frappe/socketio.js
+    restart: unless-stopped
+
+  worker-default:
+    image: frappe/frappe-worker:v15.latest
+    container_name: marvelpos-worker-default
+    depends_on:
+      - frappe
+      - redis
+    environment:
+      DB_HOST: mariadb
+      DB_PORT: 3306
+      DB_NAME: marvelpos
+      DB_USER: marvelpos
+      DB_PASSWORD: marvelpos123
+      REDIS_CACHE: redis://redis:6379/1
+      REDIS_QUEUE: redis://redis:6379/2
+      REDIS_SOCKETIO: redis://redis:6379/3
+    volumes:
+      - frappe_sites:/home/frappe/frappe-bench/sites
+    networks:
+      - marvelpos-network
+    command: /home/frappe/frappe-bench/env/bin/python -m frappe.celery worker -l info -Q default -n default
+    restart: unless-stopped
+
+  worker-long:
+    image: frappe/frappe-worker:v15.latest
+    container_name: marvelpos-worker-long
+    depends_on:
+      - frappe
+      - redis
+    environment:
+      DB_HOST: mariadb
+      DB_PORT: 3306
+      DB_NAME: marvelpos
+      DB_USER: marvelpos
+      DB_PASSWORD: marvelpos123
+      REDIS_CACHE: redis://redis:6379/1
+      REDIS_QUEUE: redis://redis:6379/2
+      REDIS_SOCKETIO: redis://redis:6379/3
+    volumes:
+      - frappe_sites:/home/frappe/frappe-bench/sites
+    networks:
+      - marvelpos-network
+    command: /home/frappe/frappe-bench/env/bin/python -m frappe.celery worker -l info -Q long,default -n long
+    restart: unless-stopped
+
+  scheduler:
+    image: frappe/frappe-worker:v15.latest
+    container_name: marvelpos-scheduler
+    depends_on:
+      - frappe
+      - redis
+    environment:
+      DB_HOST: mariadb
+      DB_PORT: 3306
+      DB_NAME: marvelpos
+      DB_USER: marvelpos
+      DB_PASSWORD: marvelpos123
+      REDIS_CACHE: redis://redis:6379/1
+      REDIS_QUEUE: redis://redis:6379/2
+      REDIS_SOCKETIO: redis://redis:6379/3
+    volumes:
+      - frappe_sites:/home/frappe/frappe-bench/sites
+    networks:
+      - marvelpos-network
+    command: /home/frappe/frappe-bench/env/bin/python -m frappe.celery worker -l info -B -n scheduler
+    restart: unless-stopped
+
+networks:
+  marvelpos-network:
+    driver: bridge
+
+volumes:
+  db_data:
+  frappe_sites:

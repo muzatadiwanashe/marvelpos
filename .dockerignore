@@ -1,0 +1,60 @@
+﻿# Git
+.git
+.gitignore
+.gitattributes
+
+# Node
+node_modules
+npm-debug.log
+yarn-error.log
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.egg-info
+dist
+build
+.pytest_cache
+.coverage
+
+# IDEs
+.vscode
+.idea
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Docker
+docker-compose.yml
+docker-compose.*.yml
+Dockerfile
+.dockerignore
+
+# CI/CD
+.github
+.gitlab-ci.yml
+.travis.yml
+
+# Documentation
+README.md
+docs
+*.md
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Development
+.env.local
+.env.*.local
+*.log
+
+# Database backups
+*.sql
+*.sql.gz
+
+# Cache
+.cache
+.pytest_cache
